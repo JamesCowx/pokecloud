@@ -171,7 +171,7 @@ function initScrollAnimations() {
 // Counter Animation
 // ============================================
 function initCounters() {
-  const counters = document.querySelectorAll('.stat-number');
+  const counters = document.querySelectorAll('.stat-number:not(#gamesCount)');
 
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
@@ -245,7 +245,7 @@ async function fetchGameCount() {
       const el = document.getElementById('gamesCount');
       if (el) {
         el.dataset.target = data.count;
-        el.textContent = data.count;
+        animateCounter(el, data.count);
       }
     }
   } catch (err) {
