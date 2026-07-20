@@ -223,7 +223,13 @@ app.get('/api/user', requireAuth, (req, res) => {
   res.json({ id: req.session.userId, username: req.session.username });
 });
 
-// List ROMs
+// List ROMs (public - count only)
+app.get('/api/roms/count', (req, res) => {
+  const roms = scanRoms();
+  res.json({ count: roms.length });
+});
+
+// List ROMs (authenticated)
 app.get('/api/roms', requireAuth, (req, res) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.set('Pragma', 'no-cache');

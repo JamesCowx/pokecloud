@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initScrollAnimations();
   initCounters();
   initMobileMenu();
+  fetchGameCount();
 });
 
 // ============================================
@@ -230,6 +231,25 @@ function initMobileMenu() {
         menuBtn.classList.remove('active');
       });
     });
+  }
+}
+
+// ============================================
+// Fetch Game Count from API
+// ============================================
+async function fetchGameCount() {
+  try {
+    const res = await fetch('/api/roms/count');
+    if (res.ok) {
+      const data = await res.json();
+      const el = document.getElementById('gamesCount');
+      if (el) {
+        el.dataset.target = data.count;
+        el.textContent = data.count;
+      }
+    }
+  } catch (err) {
+    console.log('Could not fetch game count');
   }
 }
 
