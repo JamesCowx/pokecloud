@@ -81,10 +81,45 @@ function getCoreForPlatform(platform) {
 async function startEmulator() {
   const core = getCoreForPlatform(romPlatform);
 
-  // If we have a save ID, load the save data into localStorage first
+  // If we have a save ID, load the save data first
   if (currentSaveId) {
     await loadSaveData(currentSaveId, core);
   }
+
+  // Hook into EmulatorJS save events
+  window.EJS_onSaveSave = async function(event) {
+    console.log('EmulatorJS save event triggered');
+    if (event && event.save) {
+      try {
+        const saveBlob = event.save;
+        const reader = new FileReader();
+        reader.onload = async function() {
+          const base64Data = btoa(String.fromCharCode(...new Uint8Array(reader.result)));
+          await uploadSaveToCloud(base64Data, null);
+        };
+        reader.readAsArrayBuffer(saveBlob);
+      } catch (e) {
+        console.error('Error capturing save:', e);
+      }
+    }
+  };
+
+  window.EJS_onSaveState = async function(event) {
+    console.log('EmulatorJS save state event triggered');
+    if (event && event.save) {
+      try {
+        const saveBlob = event.save;
+        const reader = new FileReader();
+        reader.onload = async function() {
+          const base64Data = btoa(String.fromCharCode(...new Uint8Array(reader.result)));
+          await uploadSaveToCloud(null, base64Data);
+        };
+        reader.readAsArrayBuffer(saveBlob);
+      } catch (e) {
+        console.error('Error capturing save state:', e);
+      }
+    }
+  };
 
   // Set ALL EmulatorJS config BEFORE loading the script
   window.EJS_player = '#game';
@@ -95,7 +130,7 @@ async function startEmulator() {
   window.EJS_gameUrl = `/api/rom/${currentRomId}`;
   window.EJS_volume = 1;
 
-  // Inject the loader script (local)
+  // Inject the loader script
   const script = document.createElement('script');
   script.src = '/emulatorjs/EmulatorJS-main/data/loader.js';
   script.onerror = () => {
@@ -105,7 +140,34 @@ async function startEmulator() {
 }
 
 // ============================================
-// Load Save Data from server into localStorage
+// Upload Save to Cloud
+// ============================================
+async function uploadSaveToCloud(saveData, saveState) {
+  try {
+    const saveName = 'Cloud Save - ' + new Date().toLocaleString();
+    const res = await fetch(`/api/saves/${currentRomId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        save_name: saveName,
+        save_data: saveData,
+        save_state: saveState
+      })
+    });
+
+    if (res.ok) {
+      showToast('Saved to cloud!', 'success');
+    } else {
+      showToast('Cloud save failed', 'error');
+    }
+  } catch (err) {
+    console.error('Cloud save error:', err);
+    showToast('Cloud save failed', 'error');
+  }
+}
+
+// ============================================
+// Load Save Data from server
 // ============================================
 async function loadSaveData(saveId, core) {
   try {
@@ -113,16 +175,11 @@ async function loadSaveData(saveId, core) {
     if (!res.ok) throw new Error('Failed to load save');
 
     const data = await res.json();
-
-    if (data.save_data) {
-      localStorage.setItem(`ejs-${core}-save`, data.save_data);
-    }
-
-    if (data.save_state) {
-      localStorage.setItem(`ejs-${core}-state`, data.save_state);
-    }
+    console.log('Save data loaded from cloud');
+    return data;
   } catch (err) {
     console.error('Error loading save data:', err);
+    return null;
   }
 }
 
@@ -156,7 +213,7 @@ function setupSaveLoad() {
   });
 
   confirmSave.addEventListener('click', async () => {
-    await saveGame();
+    await manualSave();
     saveModal.style.display = 'none';
   });
 
@@ -175,42 +232,68 @@ function setupSaveLoad() {
 }
 
 // ============================================
-// Save Game to Cloud
+// Manual Save (triggered by Save button)
 // ============================================
-async function saveGame() {
-  const saveName = document.getElementById('saveName').value || 'Save Slot 1';
-  const saveSRAM = document.getElementById('saveSRAM').checked;
-  const saveState = document.getElementById('saveState').checked;
-  const core = window.EJS_core;
+async function manualSave() {
+  const saveName = document.getElementById('saveName').value || 'Manual Save';
 
+  // Try to get save data from EmulatorJS
   let saveData = null;
-  let saveStateData = null;
+  let saveState = null;
 
   try {
-    if (saveSRAM) {
-      const saveKey = `ejs-${core}-save`;
-      saveData = localStorage.getItem(saveKey);
+    if (window.EJS_emulator && window.EJS_emulator.gameManager) {
+      const file = await window.EJS_emulator.gameManager.getSaveFile();
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = async function() {
+          const base64 = btoa(String.fromCharCode(...new Uint8Array(reader.result)));
+          await uploadManualSave(saveName, base6, null);
+        };
+        reader.readAsArrayBuffer(file);
+        return;
+      }
     }
+  } catch (e) {
+    console.log('Could not get save from emulator:', e);
+  }
 
-    if (saveState) {
-      const stateKey = `ejs-${core}-state`;
-      saveStateData = localStorage.getItem(stateKey);
+  // Fallback: try localStorage
+  try {
+    const core = window.EJS_core;
+    const saveKey = `ejs-${core}-save`;
+    const stateKey = `ejs-${core}-state`;
+    saveData = localStorage.getItem(saveKey);
+    saveState = localStorage.getItem(stateKey);
+
+    if (saveData || saveState) {
+      await uploadManualSave(saveName, saveData, saveState);
+    } else {
+      showToast('No save data found. Play the game first!', 'info');
     }
+  } catch (e) {
+    console.error('Manual save error:', e);
+    showToast('Failed to save', 'error');
+  }
+}
 
+async function uploadManualSave(saveName, saveData, saveState) {
+  try {
     const res = await fetch(`/api/saves/${currentRomId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         save_name: saveName,
         save_data: saveData,
-        save_state: saveStateData
+        save_state: saveState
       })
     });
 
-    if (!res.ok) throw new Error('Failed to save');
-
-    await res.json();
-    showToast('Game saved to cloud!', 'success');
+    if (res.ok) {
+      showToast('Game saved to cloud!', 'success');
+    } else {
+      showToast('Failed to save game', 'error');
+    }
   } catch (err) {
     console.error('Save error:', err);
     showToast('Failed to save game', 'error');
@@ -254,7 +337,6 @@ async function loadSavesList() {
     body.querySelectorAll('.save-load-btn').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         const saveId = e.currentTarget.dataset.saveId;
-        await loadSaveData(saveId, window.EJS_core);
         document.getElementById('loadModal').style.display = 'none';
         showToast('Save loaded! Restart the game to apply.', 'info');
       });
@@ -263,25 +345,6 @@ async function loadSavesList() {
     console.error('Error loading saves:', err);
     body.innerHTML = '<div class="no-saves-msg">Failed to load saves.</div>';
   }
-}
-
-// ============================================
-// Fullscreen
-// ============================================
-function setupFullscreen() {
-  const fullscreenBtn = document.getElementById('fullscreenBtn');
-
-  fullscreenBtn.addEventListener('click', () => {
-    const container = document.getElementById('emulator-container');
-
-    if (document.fullscreenElement) {
-      document.exitFullscreen();
-    } else {
-      container.requestFullscreen().catch(err => {
-        console.error('Fullscreen error:', err);
-      });
-    }
-  });
 }
 
 // ============================================
@@ -309,14 +372,11 @@ function setupVolumeControls() {
     label.textContent = vol;
     updateIcon(vol);
 
-    // EmulatorJS uses 0-1 range
     try {
       if (window.EJS_emulator && typeof window.EJS_emulator.setVolume === 'function') {
         window.EJS_emulator.setVolume(vol / 100);
       }
-    } catch (e) {
-      // Emulator not ready yet
-    }
+    } catch (e) {}
   }
 
   slider.addEventListener('input', () => {
@@ -335,7 +395,6 @@ function setupVolumeControls() {
     }
   });
 
-  // Wait for emulator to be ready, then set initial volume
   let volumeInitAttempts = 0;
   const initInterval = setInterval(() => {
     volumeInitAttempts++;
@@ -345,6 +404,25 @@ function setupVolumeControls() {
     }
     if (volumeInitAttempts > 60) clearInterval(initInterval);
   }, 500);
+}
+
+// ============================================
+// Fullscreen
+// ============================================
+function setupFullscreen() {
+  const fullscreenBtn = document.getElementById('fullscreenBtn');
+
+  fullscreenBtn.addEventListener('click', () => {
+    const container = document.getElementById('emulator-container');
+
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      container.requestFullscreen().catch(err => {
+        console.error('Fullscreen error:', err);
+      });
+    }
+  });
 }
 
 // ============================================
