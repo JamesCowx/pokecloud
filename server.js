@@ -1,5 +1,6 @@
 const express = require('express');
 const session = require('express-session');
+const FileStore = require('session-file-store')(session);
 const bcrypt = require('bcryptjs');
 const initSqlJs = require('sql.js');
 const path = require('path');
@@ -12,11 +13,12 @@ const PORT = process.env.PORT || 3000;
 const DB_PATH = path.join(__dirname, '..', 'Database', 'pokecloud.db');
 const ROMS_DIR = path.join(__dirname, '..', 'Roms');
 const SAVES_DIR = path.join(__dirname, '..', 'VirtualConsole', 'saves');
+const SESSIONS_DIR = path.join(__dirname, 'sessions');
 
 let db;
 
 // Ensure directories exist
-[path.dirname(DB_PATH), ROMS_DIR, SAVES_DIR].forEach(dir => {
+[path.dirname(DB_PATH), ROMS_DIR, SAVES_DIR, SESSIONS_DIR].forEach(dir => {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 });
 
@@ -24,10 +26,16 @@ let db;
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(session({
+  store: new FileStore({
+    path: SESSIONS_DIR,
+    ttl: 7 * 24 * 60 * 60,
+    retries: 0,
+    logFn: function() {}
+  }),
   secret: 'pokecloud-secret-key-change-in-production',
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 7 * 24 * 60 * 60 * 1000 } // 7 days
+  cookie: { maxAge: 7 * 24 * 60 * 60 * 1000 }
 }));
 
 // Static files
