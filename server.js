@@ -10,9 +10,9 @@ const { v4: uuidv4 } = require('uuid');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const DB_PATH = path.join(__dirname, '..', 'Database', 'pokecloud.db');
-const ROMS_DIR = path.join(__dirname, '..', 'Roms');
-const SAVES_DIR = path.join(__dirname, '..', 'VirtualConsole', 'saves');
+const DB_PATH = path.join(__dirname, 'Database', 'pokecloud.db');
+const ROMS_DIR = path.join(__dirname, 'Roms');
+const SAVES_DIR = path.join(__dirname, 'VirtualConsole', 'saves');
 const SESSIONS_DIR = path.join(__dirname, 'sessions');
 
 let db;
