@@ -129,6 +129,17 @@ async function initDatabase() {
   // Persist database to disk
   saveDatabase();
   console.log('Database initialized');
+
+  // Auto-create admin account if it doesn't exist
+  const adminCheck = db.exec('SELECT id FROM users WHERE username = ?', ['Admin']);
+  if (adminCheck.length === 0 || adminCheck[0].values.length === 0) {
+    const hashedPassword = await bcrypt.hash('Admin', 10);
+    const adminId = uuidv4();
+    db.run('INSERT INTO users (id, username, email, password) VALUES (?, ?, ?, ?)',
+      [adminId, 'Admin', 'admin@pokecloud.local', hashedPassword]);
+    saveDatabase();
+    console.log('Admin account created');
+  }
 }
 
 function saveDatabase() {
