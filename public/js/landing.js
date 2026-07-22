@@ -1,13 +1,13 @@
 // ============================================
-// PokeCloud Landing Page - JavaScript
+// PokeCloud Premium Landing Page
 // ============================================
 
 document.addEventListener('DOMContentLoaded', () => {
   initPreloader();
+  initCursorGlow();
   initParticles();
   initNavbar();
   initScrollAnimations();
-  initCounters();
   initMobileMenu();
   fetchGameCount();
 });
@@ -17,31 +17,53 @@ document.addEventListener('DOMContentLoaded', () => {
 // ============================================
 function initPreloader() {
   const preloader = document.getElementById('preloader');
-  window.addEventListener('load', () => {
-    setTimeout(() => {
-      preloader.classList.add('hidden');
-    }, 1200);
-  });
-  // Fallback hide after 3 seconds
   setTimeout(() => {
     preloader.classList.add('hidden');
-  }, 3000);
+    document.body.style.overflow = '';
+  }, 2000);
+  setTimeout(() => {
+    preloader.classList.add('hidden');
+  }, 4000);
 }
 
 // ============================================
-// Particle System
+// Cursor Glow
+// ============================================
+function initCursorGlow() {
+  const glow = document.getElementById('cursorGlow');
+  if (!glow || window.innerWidth < 768) return;
+
+  let mouseX = 0, mouseY = 0;
+  let glowX = 0, glowY = 0;
+
+  document.addEventListener('mousemove', (e) => {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+  });
+
+  function animate() {
+    glowX += (mouseX - glowX) * 0.08;
+    glowY += (mouseY - glowY) * 0.08;
+    glow.style.left = glowX + 'px';
+    glow.style.top = glowY + 'px';
+    requestAnimationFrame(animate);
+  }
+  animate();
+}
+
+// ============================================
+// Particles
 // ============================================
 function initParticles() {
   const canvas = document.getElementById('particles');
+  if (!canvas) return;
   const ctx = canvas.getContext('2d');
   let particles = [];
-  let animationId;
 
   function resize() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
   }
-
   resize();
   window.addEventListener('resize', resize);
 
@@ -49,49 +71,43 @@ function initParticles() {
     constructor() {
       this.reset();
     }
-
     reset() {
       this.x = Math.random() * canvas.width;
       this.y = Math.random() * canvas.height;
-      this.size = Math.random() * 2 + 0.5;
-      this.speedX = (Math.random() - 0.5) * 0.5;
-      this.speedY = (Math.random() - 0.5) * 0.5;
-      this.opacity = Math.random() * 0.5 + 0.1;
-      this.color = Math.random() > 0.5 ? '227, 53, 13' : '59, 76, 202';
+      this.size = Math.random() * 1.5 + 0.3;
+      this.speedX = (Math.random() - 0.5) * 0.3;
+      this.speedY = (Math.random() - 0.5) * 0.3;
+      this.opacity = Math.random() * 0.4 + 0.1;
+      this.color = Math.random() > 0.5 ? '227,53,13' : '59,76,202';
     }
-
     update() {
       this.x += this.speedX;
       this.y += this.speedY;
-
       if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
       if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
     }
-
     draw() {
       ctx.beginPath();
       ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(${this.color}, ${this.opacity})`;
+      ctx.fillStyle = `rgba(${this.color},${this.opacity})`;
       ctx.fill();
     }
   }
 
-  // Create particles
-  const particleCount = Math.min(80, Math.floor(window.innerWidth / 15));
-  for (let i = 0; i < particleCount; i++) {
+  const count = Math.min(60, Math.floor(window.innerWidth / 20));
+  for (let i = 0; i < count; i++) {
     particles.push(new Particle());
   }
 
-  function drawConnections() {
+  function drawLines() {
     for (let i = 0; i < particles.length; i++) {
       for (let j = i + 1; j < particles.length; j++) {
         const dx = particles[i].x - particles[j].x;
         const dy = particles[i].y - particles[j].y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-
-        if (dist < 150) {
+        if (dist < 120) {
           ctx.beginPath();
-          ctx.strokeStyle = `rgba(255, 255, 255, ${0.03 * (1 - dist / 150)})`;
+          ctx.strokeStyle = `rgba(255,255,255,${0.02 * (1 - dist / 120)})`;
           ctx.lineWidth = 0.5;
           ctx.moveTo(particles[i].x, particles[i].y);
           ctx.lineTo(particles[j].x, particles[j].y);
@@ -103,139 +119,71 @@ function initParticles() {
 
   function animate() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    particles.forEach(p => {
-      p.update();
-      p.draw();
-    });
-
-    drawConnections();
-    animationId = requestAnimationFrame(animate);
+    particles.forEach(p => { p.update(); p.draw(); });
+    drawLines();
+    requestAnimationFrame(animate);
   }
-
   animate();
 }
 
 // ============================================
-// Navbar Scroll Effect
+// Navbar
 // ============================================
 function initNavbar() {
   const navbar = document.getElementById('navbar');
-  let lastScroll = 0;
-
   window.addEventListener('scroll', () => {
-    const currentScroll = window.pageYOffset;
-
-    if (currentScroll > 50) {
+    if (window.scrollY > 50) {
       navbar.classList.add('scrolled');
     } else {
       navbar.classList.remove('scrolled');
     }
-
-    lastScroll = currentScroll;
   });
 }
 
 // ============================================
-// Scroll Reveal Animations
+// Scroll Animations
 // ============================================
 function initScrollAnimations() {
-  const observerOptions = {
-    threshold: 0.15,
-    rootMargin: '0px 0px -50px 0px'
-  };
-
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
-        const delay = entry.target.dataset.delay || 0;
+        const delay = parseInt(entry.target.dataset.delay || 0);
         setTimeout(() => {
           entry.target.classList.add('visible');
-        }, parseInt(delay));
+        }, delay);
+        observer.unobserve(entry.target);
       }
     });
-  }, observerOptions);
+  }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
 
-  // Observe feature cards
-  document.querySelectorAll('.feature-card').forEach(card => {
-    observer.observe(card);
+  document.querySelectorAll('[data-animate]').forEach(el => {
+    observer.observe(el);
   });
-
-  // Observe steps
-  document.querySelectorAll('.step').forEach(step => {
-    observer.observe(step);
-  });
-}
-
-// ============================================
-// Counter Animation
-// ============================================
-function initCounters() {
-  const counters = document.querySelectorAll('.stat-number:not(#gamesCount)');
-
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        const counter = entry.target;
-        const target = parseInt(counter.dataset.target);
-        animateCounter(counter, target);
-        observer.unobserve(counter);
-      }
-    });
-  }, { threshold: 0.5 });
-
-  counters.forEach(counter => observer.observe(counter));
-}
-
-function animateCounter(element, target) {
-  const duration = 2000;
-  const start = performance.now();
-
-  function update(currentTime) {
-    const elapsed = currentTime - start;
-    const progress = Math.min(elapsed / duration, 1);
-
-    // Easing function
-    const eased = 1 - Math.pow(1 - progress, 3);
-    const current = Math.floor(eased * target);
-
-    element.textContent = current;
-
-    if (progress < 1) {
-      requestAnimationFrame(update);
-    } else {
-      element.textContent = target;
-    }
-  }
-
-  requestAnimationFrame(update);
 }
 
 // ============================================
 // Mobile Menu
 // ============================================
 function initMobileMenu() {
-  const menuBtn = document.getElementById('mobileMenu');
-  const navLinks = document.querySelector('.nav-links');
+  const toggle = document.getElementById('mobileToggle');
+  const links = document.querySelector('.nav-links');
+  if (!toggle || !links) return;
 
-  if (menuBtn && navLinks) {
-    menuBtn.addEventListener('click', () => {
-      navLinks.classList.toggle('open');
-      menuBtn.classList.toggle('active');
-    });
+  toggle.addEventListener('click', () => {
+    links.classList.toggle('open');
+    toggle.classList.toggle('active');
+  });
 
-    // Close menu on link click
-    navLinks.querySelectorAll('a').forEach(link => {
-      link.addEventListener('click', () => {
-        navLinks.classList.remove('open');
-        menuBtn.classList.remove('active');
-      });
+  links.querySelectorAll('a').forEach(link => {
+    link.addEventListener('click', () => {
+      links.classList.remove('open');
+      toggle.classList.remove('active');
     });
-  }
+  });
 }
 
 // ============================================
-// Fetch Game Count from API
+// Fetch Game Count
 // ============================================
 async function fetchGameCount() {
   try {
@@ -244,8 +192,7 @@ async function fetchGameCount() {
       const data = await res.json();
       const el = document.getElementById('gamesCount');
       if (el) {
-        el.dataset.target = data.count;
-        animateCounter(el, data.count);
+        animateValue(el, 0, data.count, 1500);
       }
     }
   } catch (err) {
@@ -253,18 +200,31 @@ async function fetchGameCount() {
   }
 }
 
+function animateValue(el, start, end, duration) {
+  const startTime = performance.now();
+  function update(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    el.textContent = Math.floor(eased * (end - start) + start);
+    if (progress < 1) {
+      requestAnimationFrame(update);
+    } else {
+      el.textContent = end;
+    }
+  }
+  requestAnimationFrame(update);
+}
+
 // ============================================
-// Smooth scroll for anchor links
+// Smooth Scroll
 // ============================================
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-  anchor.addEventListener('click', function (e) {
+  anchor.addEventListener('click', function(e) {
     e.preventDefault();
     const target = document.querySelector(this.getAttribute('href'));
     if (target) {
-      target.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start'
-      });
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   });
 });
