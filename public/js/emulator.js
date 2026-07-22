@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupSaveLoad();
   setupFullscreen();
   setupVolumeControls();
+  setupKeyboardShortcuts();
 });
 
 // ============================================
@@ -327,7 +328,7 @@ async function loadSavesList() {
     body.innerHTML = saves.map(save => `
       <div class="save-load-item">
         <div class="save-load-info">
-          <span class="save-load-name">${save.save_name}</span>
+          <span class="save-load-name">${escHtml(save.save_name)}</span>
           <span class="save-load-date">${new Date(save.updated_at).toLocaleString()}</span>
         </div>
         <button class="save-load-btn" data-save-id="${save.id}">Load</button>
@@ -407,18 +408,48 @@ function setupVolumeControls() {
 }
 
 // ============================================
-// Fullscreen
+// Keyboard Shortcuts
+// ============================================
+function setupKeyboardShortcuts() {
+  document.addEventListener('keydown', (e) => {
+    // Ignore when typing in inputs
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+    if (e.key === 'F5') {
+      e.preventDefault();
+      document.getElementById('saveModal').style.display = 'flex';
+    } else if (e.key === 'F9') {
+      e.preventDefault();
+      document.getElementById('loadModal').style.display = 'flex';
+      loadSavesList();
+    } else if (e.key === 'F11') {
+      e.preventDefault();
+      const gameEl = document.getElementById('game');
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      } else if (gameEl) {
+        gameEl.requestFullscreen().catch(() => {});
+      }
+    } else if (e.key === 'Escape') {
+      document.getElementById('saveModal').style.display = 'none';
+      document.getElementById('loadModal').style.display = 'none';
+    }
+  });
+}
+
+// ============================================
+// Setup Fullscreen
 // ============================================
 function setupFullscreen() {
   const fullscreenBtn = document.getElementById('fullscreenBtn');
 
   fullscreenBtn.addEventListener('click', () => {
-    const container = document.getElementById('emulator-container');
+    const gameEl = document.getElementById('game');
 
     if (document.fullscreenElement) {
       document.exitFullscreen();
-    } else {
-      container.requestFullscreen().catch(err => {
+    } else if (gameEl) {
+      gameEl.requestFullscreen().catch(err => {
         console.error('Fullscreen error:', err);
       });
     }

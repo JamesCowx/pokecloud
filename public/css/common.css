@@ -1,0 +1,33 @@
+/* ============================================
+   PokeCloud Shared Variables & Reset
+   Shared across all pages
+   ============================================ */
+
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --poke-red: #e3350d;
+  --poke-red-light: #ff6b54;
+  --poke-blue: #3b4cca;
+  --poke-blue-light: #5a6ee0;
+  --poke-yellow: #ffcb05;
+  --dark: #0a0a0f;
+  --dark-2: #12121a;
+  --dark-3: #1a1a2e;
+  --gray: #8888aa;
+  --white: #f0f0ff;
+}
+
+/* Shared keyframes */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

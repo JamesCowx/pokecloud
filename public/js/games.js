@@ -94,7 +94,7 @@ function buildCard(rom, saves) {
   return '<div class="game-card" data-rom-id="' + rom.id + '">' +
     '<div class="game-card-art"' + artStyle + '>' + iconHtml + '</div>' +
     '<div class="game-card-info">' +
-    '<div class="game-card-header"><h3>' + rom.name + '</h3><span class="game-platform-tag"><img src="/assets/GBA.jpg" alt="GBA" class="gba-icon-lg"> GBA</span></div>' +
+    '<div class="game-card-header"><h3>' + escHtml(rom.name) + '</h3><span class="game-platform-tag"><img src="/assets/GBA.jpg" alt="GBA" class="gba-icon-lg"> GBA</span></div>' +
     '<div class="game-card-meta"><span>' + rom.platform + '</span>' + saveText + '</div>' +
     '<div class="game-card-actions">' +
     '<button class="btn-play" data-rom-id="' + rom.id + '"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z"/></svg> ' + playText + '</button>' +
@@ -150,7 +150,7 @@ async function openSavesModal(romId) {
       body.innerHTML = '<div class="no-saves">No save files yet. Start a new game!</div>';
     } else {
       body.innerHTML = saves.map(function(save) {
-        return '<div class="save-item"><div class="save-info"><span class="save-name">' + save.save_name + '</span><span class="save-date">Last updated: ' + new Date(save.updated_at).toLocaleString() + '</span></div><button class="save-load-btn" data-save-id="' + save.id + '" data-rom-id="' + romId + '">Load</button></div>';
+        return '<div class="save-item"><div class="save-info"><span class="save-name">' + escHtml(save.save_name) + '</span><span class="save-date">Last updated: ' + new Date(save.updated_at).toLocaleString() + '</span></div><button class="save-load-btn" data-save-id="' + escAttr(save.id) + '" data-rom-id="' + escAttr(romId) + '">Load</button></div>';
       }).join('');
       body.querySelectorAll('.save-load-btn').forEach(function(btn) {
         btn.addEventListener('click', function(e) {

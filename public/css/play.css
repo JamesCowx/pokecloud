@@ -2,24 +2,6 @@
    PokeCloud Play/Emulator Page
    ============================================ */
 
-*, *::before, *::after {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-:root {
-  --poke-red: #e3350d;
-  --poke-red-light: #ff6b54;
-  --poke-blue: #3b4cca;
-  --poke-blue-light: #5a6ee0;
-  --dark: #0a0a0f;
-  --dark-2: #12121a;
-  --dark-3: #1a1a2e;
-  --gray: #8888aa;
-  --white: #f0f0ff;
-}
-
 html, body {
   height: 100%;
 }
