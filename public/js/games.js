@@ -5,6 +5,8 @@ document.addEventListener('DOMContentLoaded', () => {
   initDashboard();
   setupLogout();
   setupModal();
+  setupProfileDropdown();
+  document.addEventListener('click', handleOutsideClick);
 });
 
 async function initDashboard() {
@@ -17,6 +19,7 @@ async function initDashboard() {
     currentUser = await res.json();
     document.getElementById('userName').textContent = currentUser.username;
     document.getElementById('welcomeName').textContent = currentUser.username;
+    document.getElementById('dropdownUsername').textContent = currentUser.username;
     document.getElementById('userAvatar').textContent = currentUser.username.charAt(0).toUpperCase();
     loadRoms();
   } catch (err) {
@@ -63,41 +66,45 @@ async function loadSavesForRom(romId) {
 }
 
 function buildCard(rom, saves) {
-  const platformBadge = 'GBA';
-  const hasSaves = Array.isArray(saves) && saves.length > 0;
-  const lastSave = hasSaves ? new Date(saves[0].updated_at).toLocaleDateString() : null;
+  var hasSaves = Array.isArray(saves) && saves.length > 0;
+  var lastSave = hasSaves ? new Date(saves[0].updated_at).toLocaleDateString() : null;
+  var saveCount = hasSaves ? saves.length : 0;
 
-  const images = {
+  var images = {
     'Pokemon - FireRed Version': '/assets/FireRedSplash2.jpg',
     'Pokemon - LeafGreen Version': '/assets/LeafGreenSplash.jpg'
   };
 
-  let img = null;
-  for (const key in images) {
-    if (rom.name.includes(key)) {
+  var img = null;
+  for (var key in images) {
+    if (rom.name.indexOf(key) !== -1) {
       img = images[key];
       break;
     }
   }
 
-  const artStyle = img ? ' style="background-image:url(' + img + ');background-size:cover;background-position:center;"' : '';
-  const iconHtml = img ? '' : '<div class="game-icon"><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959v0a.64.64 0 01-.657.643 48.491 48.491 0 01-4.163-.3c-1.103-.178-2.13.658-2.13 1.772v0c0 .852.57 1.595 1.397 1.852a6.714 6.714 0 003.551.147c.344-.07.657.138.772.47.13.372.283.737.46 1.093.18.36.164.784-.044 1.14-.303.527-.76.94-1.28 1.217-.52.278-1.1.412-1.72.412h-1.5c-.62 0-1.2-.134-1.72-.412a3.068 3.068 0 01-1.28-1.217c-.208-.356-.224-.78-.044-1.14.177-.356.33-.72.46-1.093.115-.332.428-.54.772-.47a6.714 6.714 0 003.551-.147c.827-.257 1.397-1 1.397-1.852v0c0-1.114-1.027-1.95-2.13-1.772a48.491 48.491 0 01-4.163.3.64.64 0 01-.657-.643v0c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875S2.25 4.036 2.25 5.072c0 .369.128.713.349 1.003.215.283.401.604.401.959v0c0 .552.448 1 1 1h4.5c.552 0 1-.448 1-1v0z"/></svg></div>';
+  var artStyle = img ? ' style="background-image:url(' + img + ')"' : '';
+  var iconHtml = img ? '' : '<div class="game-icon"><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959v0a.64.64 0 01-.657.643 48.491 48.491 0 01-4.163-.3c-1.103-.178-2.13.658-2.13 1.772v0c0 .852.57 1.595 1.397 1.852a6.714 6.714 0 003.551.147c.344-.07.657.138.772.47.13.372.283.737.46 1.093.18.36.164.784-.044 1.14-.303.527-.76.94-1.28 1.217-.52.278-1.1.412-1.72.412h-1.5c-.62 0-1.2-.134-1.72-.412a3.068 3.068 0 01-1.28-1.217c-.208-.356-.224-.78-.044-1.14.177-.356.33-.72.46-1.093.115-.332.428-.54.772-.47a6.714 6.714 0 003.551-.147c.827-.257 1.397-1 1.397-1.852v0c0-1.114-1.027-1.95-2.13-1.772a48.491 48.491 0 01-4.163.3.64.64 0 01-.657-.643v0c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875S2.25 4.036 2.25 5.072c0 .369.128.713.349 1.003.215.283.401.604.401.959v0c0 .552.448 1 1 1h4.5c.552 0 1-.448 1-1v0z"/></svg></div>';
+  var badgeHtml = '<span class="game-art-badge">' + escHtml(rom.platform) + '</span>';
 
-  let savesBtn = '';
+  var savesBtn = '';
   if (hasSaves) {
-    savesBtn = '<button class="btn-saves" data-rom-id="' + rom.id + '" data-action="saves"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m6 4.125l2.25 2.25m0 0l2.25 2.25M12 13.875l2.25-2.25M12 13.875l-2.25 2.25M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/></svg> Saves</button>';
+    savesBtn = '<button class="btn-saves" data-rom-id="' + escAttr(rom.id) + '" data-action="saves"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m6 4.125l2.25 2.25m0 0l2.25 2.25M12 13.875l2.25-2.25M12 13.875l-2.25 2.25M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/></svg> ' + saveCount + '</button>';
   }
 
-  const saveText = hasSaves ? '<span>Last save: ' + lastSave + '</span>' : '<span>No saves</span>';
-  const playText = hasSaves ? 'Continue' : 'Play';
+  var saveIcon = hasSaves
+    ? '<span class="meta-save"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l3 3m0 0l3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>' + lastSave + '</span>'
+    : '<span>No saves yet</span>';
 
-  return '<div class="game-card" data-rom-id="' + rom.id + '">' +
-    '<div class="game-card-art"' + artStyle + '>' + iconHtml + '</div>' +
+  var playText = hasSaves ? 'Continue' : 'Play';
+
+  return '<div class="game-card" data-rom-id="' + escAttr(rom.id) + '">' +
+    '<div class="game-card-art"' + artStyle + '>' + iconHtml + badgeHtml + '</div>' +
     '<div class="game-card-info">' +
-    '<div class="game-card-header"><h3>' + escHtml(rom.name) + '</h3><span class="game-platform-tag"><img src="/assets/GBA.jpg" alt="GBA" class="gba-icon-lg"> GBA</span></div>' +
-    '<div class="game-card-meta"><span>' + rom.platform + '</span>' + saveText + '</div>' +
+    '<h3>' + escHtml(rom.name) + '</h3>' +
+    '<div class="game-card-meta">' + saveIcon + '</div>' +
     '<div class="game-card-actions">' +
-    '<button class="btn-play" data-rom-id="' + rom.id + '"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z"/></svg> ' + playText + '</button>' +
+    '<button class="btn-play" data-rom-id="' + escAttr(rom.id) + '"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z"/></svg> ' + playText + '</button>' +
     savesBtn +
     '</div></div></div>';
 }
@@ -160,6 +167,26 @@ async function openSavesModal(romId) {
     }
   } catch (err) {
     body.innerHTML = '<div class="no-saves">Failed to load saves.</div>';
+  }
+}
+
+function setupProfileDropdown() {
+  var trigger = document.getElementById('profileTrigger');
+  var dropdown = document.getElementById('profileDropdown');
+
+  trigger.addEventListener('click', function(e) {
+    e.stopPropagation();
+    dropdown.classList.toggle('hidden');
+    trigger.classList.toggle('active');
+  });
+}
+
+function handleOutsideClick(e) {
+  var dropdown = document.getElementById('profileDropdown');
+  var trigger = document.getElementById('profileTrigger');
+  if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+    dropdown.classList.add('hidden');
+    trigger.classList.remove('active');
   }
 }
 
