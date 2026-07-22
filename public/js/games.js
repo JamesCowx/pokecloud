@@ -26,12 +26,9 @@ async function initDashboard() {
 
 async function loadRoms() {
   try {
-    console.log('Fetching ROMs...');
     const res = await fetch('/api/roms?t=' + Date.now());
-    console.log('Response status:', res.status);
     if (!res.ok) throw new Error('Failed to load ROMs');
     const roms = await res.json();
-    console.log('Got', roms.length, 'ROMs');
     document.getElementById('totalRoms').textContent = roms.length;
     const grid = document.getElementById('gamesGrid');
     if (roms.length === 0) {
@@ -43,20 +40,15 @@ async function loadRoms() {
     let totalSaves = 0;
     const cards = [];
     for (const rom of roms) {
-      console.log('Processing:', rom.name);
       const saves = await loadSavesForRom(rom.id);
-      console.log('Saves:', saves.length);
       totalSaves += saves.length;
       cards.push(buildCard(rom, saves));
-      console.log('Card built for', rom.name);
     }
     document.getElementById('totalSaves').textContent = totalSaves;
-    console.log('Setting innerHTML with', cards.length, 'cards');
     grid.innerHTML = cards.join('');
-    console.log('Done');
     setupGameCards();
   } catch (err) {
-    console.error('Error:', err);
+    console.error('Error loading ROMs:', err);
   }
 }
 

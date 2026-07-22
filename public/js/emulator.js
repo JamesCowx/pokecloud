@@ -248,7 +248,7 @@ async function manualSave() {
         const reader = new FileReader();
         reader.onload = async function() {
           const base64 = btoa(String.fromCharCode(...new Uint8Array(reader.result)));
-          await uploadManualSave(saveName, base6, null);
+          await uploadManualSave(saveName, base64, null);
         };
         reader.readAsArrayBuffer(file);
         return;

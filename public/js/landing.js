@@ -19,7 +19,6 @@ function initPreloader() {
   const preloader = document.getElementById('preloader');
   setTimeout(() => {
     preloader.classList.add('hidden');
-    document.body.style.overflow = '';
   }, 2000);
   setTimeout(() => {
     preloader.classList.add('hidden');
